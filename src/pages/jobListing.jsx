@@ -1,12 +1,13 @@
-import { useEffect, useState } from "react";
-import { useUser } from "@clerk/clerk-react";
-import { State } from "country-state-city";
-import { BarLoader } from "react-spinners";
-import useFetch from "@/hooks/use-fetch";
-
-import JobCard from "@/components/job-card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { getJobs } from '@/api/apiJobs'
+import useFetch from '@/hooks/use-fetch'
+import { useUser } from '@clerk/react'
+import React, { useEffect } from 'react'
+import { useState } from 'react'
+import { BarLoader } from 'react-spinners'
+import JobCard from '@/components/job-card'
+import { getCompanies } from '@/api/apiCompanies'
+import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
@@ -15,49 +16,49 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-import { getCompanies } from "@/api/apiCompanies";
-import { getJobs } from "@/api/apiJobs";
+import { State } from 'country-state-city'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 
 const JobListing = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [location, setLocation] = useState("");
   const [company_id, setCompany_id] = useState("");
-
   const { isLoaded } = useUser();
 
-  const {
-    // loading: loadingCompanies,
-    data: companies,
-    fn: fnCompanies,
-  } = useFetch(getCompanies);
+  const [page, setPage] = useState(1);
+  const jobsPerPage = 6;
 
-  const {
-    loading: loadingJobs,
-    data: jobs,
-    fn: fnJobs,
-  } = useFetch(getJobs, {
+  const { fn: fnJobs, data: jobs, loading: loadingJobs } = useFetch(getJobs, {
     location,
     company_id,
     searchQuery,
   });
 
+  const { fn: fnCompanies, data: companies } = useFetch(getCompanies);
+
   useEffect(() => {
-    if (isLoaded) {
-      fnCompanies();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (isLoaded) fnCompanies();
   }, [isLoaded]);
 
   useEffect(() => {
     if (isLoaded) fnJobs();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded, location, company_id, searchQuery]);
+
+  // 🔥 Reset page when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [location, company_id, searchQuery]);
 
   const handleSearch = (e) => {
     e.preventDefault();
     let formData = new FormData(e.target);
-
     const query = formData.get("search-query");
     if (query) setSearchQuery(query);
   };
@@ -68,15 +69,21 @@ const JobListing = () => {
     setLocation("");
   };
 
+  // 🔥 Pagination logic
+  const start = (page - 1) * jobsPerPage;
+  const end = start + jobsPerPage;
+
+  const paginatedJobs = jobs?.slice(start, end) || [];
+  const totalPages = jobs ? Math.ceil(jobs.length / jobsPerPage) : 0;
+
   if (!isLoaded) {
-    return <BarLoader className="mb-4" width={"100%"} color="#36d7b7" />;
+    return <BarLoader className='mb-4' width={"100%"} color='#36d7b7'/>
   }
 
   return (
-    <div className="">
-      <h1 className="gradient-title font-extrabold text-6xl sm:text-7xl text-center pb-8">
-        Latest Jobs
-      </h1>
+    <div>
+      <h2 className='gradient-title font-extrabold text-6xl sm:text-7xl text-center pb-8'>Latest Jobs</h2>
+
       <form
         onSubmit={handleSearch}
         className="h-14 flex flex-row w-full gap-2 items-center mb-3"
@@ -85,7 +92,7 @@ const JobListing = () => {
           type="text"
           placeholder="Search Jobs by Title.."
           name="search-query"
-          className="h-full flex-1  px-4 text-md"
+          className="h-full flex-1 px-4 text-md"
         />
         <Button type="submit" className="h-full sm:w-28" variant="blue">
           Search
@@ -99,13 +106,11 @@ const JobListing = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              {State.getStatesOfCountry("IN").map(({ name }) => {
-                return (
-                  <SelectItem key={name} value={name}>
-                    {name}
-                  </SelectItem>
-                );
-              })}
+              {State.getStatesOfCountry("IN").map(({ name }) => (
+                <SelectItem key={name} value={name}>
+                  {name}
+                </SelectItem>
+              ))}
             </SelectGroup>
           </SelectContent>
         </Select>
@@ -119,48 +124,76 @@ const JobListing = () => {
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              {companies?.map(({ name, id }) => {
-                return (
-                  <SelectItem key={name} value={id}>
-                    {name}
-                  </SelectItem>
-                );
-              })}
+              {companies?.map(({ name, id }) => (
+                <SelectItem key={name} value={id}>
+                  {name}
+                </SelectItem>
+              ))}
             </SelectGroup>
           </SelectContent>
         </Select>
-        <Button
-          className="sm:w-1/2"
-          variant="destructive"
-          onClick={clearFilters}
-        >
+
+        <Button className="sm:w-1/2" variant="destructive" onClick={clearFilters}>
           Clear Filters
         </Button>
       </div>
 
       {loadingJobs && (
-        <BarLoader className="mt-4" width={"100%"} color="#36d7b7" />
+        <BarLoader className='mt-4' width={"100%"} color='#36d7b7'/>
       )}
 
       {loadingJobs === false && (
-        <div className="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {jobs?.length ? (
-            jobs.map((job) => {
-              return (
-                <JobCard
-                  key={job.id}
-                  job={job}
-                  savedInit={job?.saved?.length > 0}
-                />
-              );
-            })
+        <div className='mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-4'>
+          {paginatedJobs.length ? (
+            paginatedJobs.map((job) => (
+              <JobCard
+                key={job.id}
+                job={job}
+                savedInit={job?.saved?.length > 0}
+              />
+            ))
           ) : (
-            <div>No Jobs Found 😢</div>
+            <div>No Jobs Found</div>
           )}
         </div>
       )}
-    </div>
-  );
-};
 
-export default JobListing;
+      {/* 🔥 Pagination UI */}
+      {totalPages > 0 && (
+        <Pagination>
+          <PaginationContent>
+
+            {/* Previous */}
+            <PaginationItem>
+              <PaginationPrevious
+                onClick={() => page > 1 && setPage(page - 1)}
+              />
+            </PaginationItem>
+
+            {/* Page Numbers */}
+            {Array.from({ length: totalPages }, (_, i) => (
+              <PaginationItem key={i}>
+                <PaginationLink
+                  isActive={page === i + 1}
+                  onClick={() => setPage(i + 1)}
+                >
+                  {i + 1}
+                </PaginationLink>
+              </PaginationItem>
+            ))}
+
+            {/* Next */}
+            <PaginationItem>
+              <PaginationNext
+                onClick={() => page < totalPages && setPage(page + 1)}
+              />
+            </PaginationItem>
+
+          </PaginationContent>
+        </Pagination>
+      )}
+    </div>
+  )
+}
+
+export default JobListing

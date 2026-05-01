@@ -7,7 +7,7 @@ import { shadesOfPurple } from "@clerk/themes";
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <ClerkProvider appearance={{
+    <ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY} appearance={{
         baseTheme: shadesOfPurple,
       }}>
       <App />
