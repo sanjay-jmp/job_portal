@@ -158,7 +158,6 @@ const JobListing = () => {
         </div>
       )}
 
-      {/* 🔥 Pagination UI */}
       {totalPages > 0 && (
         <Pagination>
           <PaginationContent>

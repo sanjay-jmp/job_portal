@@ -49,6 +49,11 @@ const JobCard = ({
      job_id: job.id,
    });
 
+   const handleDeleteJob = async()=>{
+    await fnDeleteJob();
+    onJobAction();
+   }
+
    useEffect(() => {
     if (savedJob !== undefined) setSaved(savedJob?.length > 0);
    }, [savedJob]);
@@ -58,7 +63,7 @@ const JobCard = ({
       {loadingDeleteJob && (
         <BarLoader className="mt-4" width={"100%"} color="#36d7b7" />
       )}
-      <CardHeader className="flex">
+      <CardHeader>
         <CardTitle className="flex justify-between font-bold">
           {job.title}
           {isMyJob && (
@@ -109,29 +114,3 @@ const JobCard = ({
 
 export default JobCard;
 
-// const { loading: loadingDeleteJob, fn: fnDeleteJob } = useFetch(deleteJob, {
-//     job_id: job.id,
-//   });
-
-//   const {
-//     loading: loadingSavedJob,
-//     data: savedJob,
-//     fn: fnSavedJob,
-//   } = useFetch(saveJob);
-
-//   const handleSaveJob = async () => {
-//     await fnSavedJob({
-//       user_id: user.id,
-//       job_id: job.id,
-//     });
-//     onJobAction();
-//   };
-
-//   const handleDeleteJob = async () => {
-//     await fnDeleteJob();
-//     onJobAction();
-//   };
-
-//   useEffect(() => {
-//     if (savedJob !== undefined) setSaved(savedJob?.length > 0);
-//   }, [savedJob]);
